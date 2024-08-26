@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbitrage Bot</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.6.1/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+</head>
+<body>
+    <h1>Arbitrage Bot</h1>
+
+    <label for="amount">Flashloan Amount (DAI):</label>
+    <input type="number" id="amount" name="amount" min="0">
+
+    <br><br>
+
+    <button onclick="connectMetaMask()">Connect to MetaMask</button>
+    <button onclick="preview()">Preview</button>
+    <button onclick="execute()">Execute</button>
+
+    <br><br>
+
+    <label for="result">Profitability Preview:</label>
+    <input type="text" id="result" readonly>
+
+    <script>
+        let web3;
+        let arbitrageContract;
+        let userAccount;
+
+        const contractAddress = "YOUR_CONTRACT_ADDRESS"; // Replace with deployed contract address
+        const contractABI = []; // ABI of your contract
+        
+        async function connectMetaMask() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    await ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = (await web3.eth.getAccounts())[0];
+                    arbitrageContract = new web3.eth.Contract(contractABI, contractAddress);
+                    console.log("Connected account: ", userAccount);
+                } catch (error) {
+                    console.error("User denied account access", error);
+                }
+            } else {
+                alert("MetaMask is not installed!");
+            }
+        }
+
+        async function preview() {
+            const amount = document.getElementById("amount").value;
+            if (!amount) {
+                alert("Enter the amount");
+                return;
+            }
+            try {
+                const profitability = await arbitrageContract.methods.previewProfitability(amount).call();
+                document.getElementById("result").value = profitability > 0 ? `Profit: ${profitability}` : "Not viable";
+            } catch (error) {
+                console.error("Error in preview: ", error);
+            }
+        }
+
+        async function execute() {
+            const amount = document.getElementById("amount").value;
+            if (!amount) {
+                alert("Enter the amount");
+                return;
+            }
+            try {
+                await arbitrageContract.methods.executeArbitrage(amount).send({ from: userAccount });
+                alert("Transaction executed!");
+            } catch (error) {
+                console.error("Error in execution: ", error);
+            }
+        }
+
+        // Uniswap Swap Function (SDK)
+        async function swapDAIToETH(daiAmount) {
+            const daiToken = "0x6B175474E89094C44Da98b954EedeAC495271d0F"; // DAI address
+            const wethToken = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH address
+
+            // Implement the logic using Uniswap SDK
+            // Call the smart contract swap function
+        }
+
+        // 1inch API for swapping ETH to DAI
+        async function swapETHToDAI(ethAmount) {
+            const oneInchAPI = `https://api.1inch.exchange/v3.0/1/swap`;
+            const response = await fetch(`${oneInchAPI}?fromTokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee&toTokenAddress=0x6B175474E89094C44Da98b954EedeAC495271d0F&amount=${ethAmount}`);
+            const data = await response.json();
+            
+            return data;
+        }
+    </script>
+</body>
+</html>
